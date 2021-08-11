@@ -2,7 +2,7 @@
   "name": "leek-fund",
   "displayName": "韭菜盒子",
   "description": "韭菜盒子，VSCode 里也可以看股票 & 基金实时数据，做最好用的投资插件",
-  "version": "1.9.9",
+  "version": "2.3.3",
   "author": "giscafer <giscafer@outlook.com>",
   "repository": {
     "type": "git",
@@ -56,6 +56,10 @@
         {
           "id": "leekFundView.stock",
           "name": "Stock"
+        },
+        {
+          "id": "leekFundView.future",
+          "name": "Future"
         },
         {
           "id": "leekFundView.news",
@@ -207,6 +211,46 @@
         }
       },
       {
+        "command": "leek-fund.addFuture",
+        "title": "添加期货",
+        "icon": {
+          "light": "resources/light/add.svg",
+          "dark": "resources/dark/add.svg"
+        }
+      },
+      {
+        "command": "leek-fund.sortFuture",
+        "title": "升序/降序/不排序",
+        "icon": {
+          "light": "resources/light/sort.svg",
+          "dark": "resources/dark/sort.svg"
+        }
+      },
+      {
+        "command": "leek-fund.refreshFuture",
+        "title": "刷新数据",
+        "icon": {
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
+      },
+      {
+        "command": "leek-fund.setFutureTop",
+        "title": "期货置顶",
+        "icon": {
+          "light": "resources/light/top.svg",
+          "dark": "resources/dark/top.svg"
+        }
+      },
+      {
+        "command": "leek-fund.deleteFuture",
+        "title": "删除期货"
+      },
+      {
+        "command": "leek-fund.futureTrendPic",
+        "title": "期货走势（图片版）"
+      },
+      {
         "command": "leek-fund.refreshFollow",
         "title": "刷新关注列表",
         "icon": {
@@ -330,6 +374,26 @@
           "group": "navigation"
         },
         {
+          "command": "leek-fund.refreshFuture",
+          "when": "view == leekFundView.future",
+          "group": "navigation"
+        },
+        {
+          "command": "leek-fund.sortFuture",
+          "when": "view == leekFundView.future",
+          "group": "navigation"
+        },
+        {
+          "command": "leek-fund.addFuture",
+          "when": "view == leekFundView.future",
+          "group": "navigation"
+        },
+        {
+          "command": "leek-fund.viewFundFlow",
+          "when": "view == leekFundView.future",
+          "group": "navigation"
+        },
+        {
           "command": "leek-fund.refreshFollow",
           "when": "view == leekFundView.news",
           "group": "navigation"
@@ -402,6 +466,26 @@
           "group": "group5"
         },
         {
+          "command": "leek-fund.setFutureTop",
+          "when": "view == leekFundView.future && viewItem != category  && viewItem!=nodata",
+          "group": "group1"
+        },
+        {
+          "command": "leek-fund.setFutureTop",
+          "when": "view == leekFundView.future && viewItem != category && viewItem!=nodata",
+          "group": "inline"
+        },
+        {
+          "command": "leek-fund.futureTrendPic",
+          "when": "view == leekFundView.stock  && viewItem != category && viewItem!=nodata",
+          "group": "group2"
+        },
+        {
+          "command": "leek-fund.deleteFuture",
+          "when": "view == leekFundView.future  && viewItem != category",
+          "group": "group5"
+        },
+        {
           "command": "leek-fund.deletePair",
           "when": "view == leekFundView.binance  && viewItem != category",
           "group": "group0"
@@ -434,6 +518,7 @@
           "type": "array",
           "default": [
             "sh000001",
+            "sh000002",
             "sh000300",
             "sh000016",
             "sh000688",
@@ -444,6 +529,13 @@
             "usr_inx"
           ],
           "description": "配置需要监控的股票代码（建议通过界面新增）"
+        },
+        "leek-fund.futures": {
+          "type": "array",
+          "default": [
+            "FU2109"
+          ],
+          "description": "配置需要监控的期货代码（建议通过界面新增）"
         },
         "leek-fund.funds": {
           "type": "array",
@@ -479,6 +571,13 @@
           ],
           "description": "状态栏展示的股票（建议通过界面选择设置，必须是在股票代码已设置存在）"
         },
+        "leek-fund.statusBarFuture": {
+          "type": "array",
+          "default": [
+            "FU2109"
+          ],
+          "description": "状态栏展示的期货（建议通过界面选择设置，必须是在股票代码已设置存在）"
+        },
         "leek-fund.interval": {
           "type": "number",
           "default": 5000,
@@ -503,6 +602,11 @@
           "type": "boolean",
           "default": false,
           "description": "是否隐藏股票状态栏"
+        },
+        "leek-fund.hideStatusBarFuture": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否隐藏期货状态栏"
         },
         "leek-fund.hideStatusBar": {
           "type": "boolean",
@@ -557,6 +661,7 @@
           "default": {
             "statusBarLabelFormat": "「${name}」${price}  ${icon}（${percent}）",
             "sidebarStockLabelFormat": "${icon|padRight|4}${percent|padRight|11}${price|padRight|15}「${name}」",
+            "sidebarFutureLabelFormat": "${icon|padRight|4}${percent|padRight|11}${price|padRight|15}「${name}」",
             "sidebarFundLabelFormat": "${icon|padRight|4}${percent|padRight}「${name}」${earnings} ${time}"
           },
           "description": "修改底部状态栏、侧栏的显示格式。\n"
@@ -583,6 +688,10 @@
         "contents": "无数据，请检查网络或添加股票"
       },
       {
+        "view": "leekFundView.future",
+        "contents": "无数据，请检查网络或添加期货"
+      },
+      {
         "view": "leekFundView.binance",
         "contents": "无数据，请检查网络或添加交易对"
       },
@@ -591,7 +700,7 @@
         "contents": "无数据，请检查网络或添加关注用户"
       },
       {
-        "view": "leekFundView.settings",
+        "view": "leekView.settings",
         "contents": "\n [🏠️ 韭菜之家](command:leek-fund.leekCenterView) \n [🌈个性化设置](command:leek-fund.customSetting)\n[🛠打开配置页](command:leek-fund.openConfigPage)\n[💰打赏作者@giscafer](command:leek-fund.donate)\n 欢迎使用韭菜盒子^_^，[使用手册](https://github.com/giscafer/leek-fund/issues/23)；论坛[韭菜盒子社区](command:leek-fund.tucaoForum)，源码[Github](https://github.com/giscafer/leek-fund)，加群交流[微信群](https://github.com/giscafer/leek-fund/issues/19)， 电报群[Telegram](https://t.me/joinchat/VKxykRyeRNcibg7I-ykZMg)"
       }
     ]
@@ -656,7 +765,7 @@
     "lodash.clonedeep": "^4.5.0",
     "lodash.throttle": "^4.1.1",
     "public-ip": "^4.0.3",
-    "ws": "^7.4.1"
+    "ws": "^7.5.3"
   },
   "extensionKind": [
     "ui",

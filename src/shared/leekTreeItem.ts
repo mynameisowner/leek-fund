@@ -154,6 +154,24 @@ export class LeekTreeItem extends TreeItem {
             percent: `${_percent}%`,
           }
         );
+      } else if (this._itemType === TreeItemType.FUTURE) {
+        if (type === 'nodata') {
+          text = info.name;
+        } else {
+          /* text = `${!isIconPath ? iconPath : ''}${risePercent}${formatTreeText(
+            price,
+            15
+          )}「${name}」`; */
+          text = formatLabelString(
+            globalState.labelFormat?.['sidebarStockLabelFormat'] ??
+              DEFAULT_LABEL_FORMAT.sidebarFutureLabelFormat,
+            {
+              ...info,
+              icon: !isIconPath ? iconPath : '',
+              percent: `${_percent}%`,
+            }
+          );
+        }
       }
     } else {
       /* `showLabel: false` */
@@ -195,6 +213,8 @@ export class LeekTreeItem extends TreeItem {
       }
     } else if (this._itemType === TreeItemType.BINANCE) {
       this.tooltip = `【今日行情】${name}\n 涨跌：${updown}   百分比：${_percent}%\n 最高：${high}   最低：${low}\n 今开：${open}   昨收：${yestclose}\n 成交量：${volume}   成交额：${amount}`;
+    } else if (this._itemType === TreeItemType.FUTURE) {
+      this.tooltip = `【今日行情】${name}\n 涨跌：${updown}   百分比：${_percent}%\n 最高：${high}   最低：${low}\n 今开：${open}   昨收：${yestclose}\n 成交量：${volume}`;
     } else {
       this.tooltip = `「${name}」(${code})`;
     }

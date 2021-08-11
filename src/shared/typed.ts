@@ -1,6 +1,9 @@
 // 支持的股票类型
 export const STOCK_TYPE = ['sh', 'sz', 'hk', 'gb', 'us'];
 
+// 支持的期货类型
+export const FUTURE_TYPE = ['sh', 'sz', 'hk', 'gb', 'us'];
+
 export enum SortType {
   NORMAL = 0, // 基金默认顺序
   ASC = 1, // 涨跌升序
@@ -25,6 +28,8 @@ export enum TreeItemType {
   STOCK = 'stock',
   /** 币安 */
   BINANCE = 'binance',
+  /** 期货 */
+  FUTURE = 'future',
 }
 
 export interface IAmount {
@@ -84,6 +89,11 @@ export enum StockCategory {
   A = 'A Stock',
   US = 'US Stock',
   HK = 'HK Stock',
+  NODATA = 'Not Support Stock',
+}
+
+export enum FutureCategory {
+  F = 'Future',
   NODATA = 'Not Support Stock',
 }
 

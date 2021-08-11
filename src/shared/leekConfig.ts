@@ -107,6 +107,40 @@ export class LeekFundConfig extends BaseConfig {
 
   // Stock End
 
+  // Future Begin
+  static updateFutureCfg(codes: string, cb?: Function) {
+    this.updateConfig('leek-fund.futures', codes.split(',')).then(() => {
+      window.showInformationMessage(`Future Successfully add.`);
+      if (cb && typeof cb === 'function') {
+        cb(codes);
+      }
+    });
+  }
+
+  static removeFutureCfg(code: string, cb?: Function) {
+    this.removeConfig('leek-fund.futures', code).then(() => {
+      window.showInformationMessage(`Future Successfully delete.`);
+      if (cb && typeof cb === 'function') {
+        cb(code);
+      }
+    });
+  }
+
+  static setFutureTopCfg(code: string, cb?: Function) {
+    let configArr: string[] = this.getConfig('leek-fund.futures');
+
+    configArr = [code, ...configArr.filter((item) => item !== code)];
+
+    this.setConfig('leek-fund.futures', configArr).then(() => {
+      window.showInformationMessage(`Future successfully set to top.`);
+      if (cb && typeof cb === 'function') {
+        cb(code);
+      }
+    });
+  }
+
+  // Future End
+
   // Binance Begin
   static updateBinanceCfg(codes: string, cb?: Function) {
     this.updateConfig('leek-fund.binance', codes.split(',')).then(() => {
@@ -140,6 +174,15 @@ export class LeekFundConfig extends BaseConfig {
   static updateStatusBarStockCfg(codes: Array<string>, cb?: Function) {
     this.setConfig('leek-fund.statusBarStock', codes).then(() => {
       window.showInformationMessage(`Status Bar Stock Successfully update.`);
+      if (cb && typeof cb === 'function') {
+        cb(codes);
+      }
+    });
+  }
+
+  static updateStatusBarFutureCfg(codes: Array<string>, cb?: Function) {
+    this.setConfig('leek-fund.statusBarFuture', codes).then(() => {
+      window.showInformationMessage(`Status Bar Future Successfully update.`);
       if (cb && typeof cb === 'function') {
         cb(codes);
       }

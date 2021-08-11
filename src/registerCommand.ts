@@ -4,6 +4,8 @@ import { BinanceProvider } from './explorer/binanceProvider';
 import BinanceService from './explorer/binanceService';
 import { FundProvider } from './explorer/fundProvider';
 import FundService from './explorer/fundService';
+import { FutureProvider } from './explorer/futureProvider';
+import FutureService from './explorer/futureService';
 import { NewsProvider } from './explorer/newsProvider';
 import { NewsService } from './explorer/newsService';
 import { StockProvider } from './explorer/stockProvider';
@@ -37,6 +39,8 @@ export function registerViewEvent(
   stockProvider: StockProvider,
   newsProvider: NewsProvider,
   flashNewsOutputServer: FlashNewsOutputServer,
+  futureProvider: FutureProvider,
+  futureService: FutureService,
   binanceProvider?: BinanceProvider
 ) {
   const leekModel = new LeekFundConfig();
@@ -158,6 +162,75 @@ export function registerViewEvent(
   commands.registerCommand('leek-fund.sortStock', () => {
     stockProvider.changeOrder();
     stockProvider.refresh();
+  });
+
+  // Future operation
+  commands.registerCommand('leek-fund.refreshFuture', () => {
+    futureProvider.refresh();
+    const handler = window.setStatusBarMessage(`期货数据已刷新`);
+    setTimeout(() => {
+      handler.dispose();
+    }, 1000);
+  });
+  commands.registerCommand('leek-fund.deleteFuture', (target) => {
+    LeekFundConfig.removeFutureCfg(target.id, () => {
+      futureProvider.refresh();
+    });
+  });
+  commands.registerCommand('leek-fund.addFuture', () => {
+    console.log('in add future')
+    // vscode QuickPick 不支持动态查询，只能用此方式解决
+    // https://github.com/microsoft/vscode/issues/23633
+    const qp = window.createQuickPick();
+    qp.items = [{ label: '请输入关键词查询，如：FU2109 或 燃油2109' }];
+    let code: string | undefined;
+    let timer: NodeJS.Timer | null = null;
+    qp.onDidChangeValue((value) => {
+      qp.busy = true;
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      timer = setTimeout(async () => {
+        const res = await futureService.getFutureSuggestList(value);
+        qp.items = res;
+        qp.busy = false;
+      }, 100); // 简单防抖
+      code = value;
+    });
+    qp.onDidChangeSelection((e) => {
+      if (e[0].description) {
+        code = e[0].label && e[0].label.split(' | ')[0];
+      }
+    });
+    qp.show();
+    qp.onDidAccept(() => {
+      console.log('accept', code);
+      if (!code) {
+        return;
+      }
+      if (!(/^[a-zA-Z]+\d{4}$/.test(code))) {
+        console.log('dont accept', code);
+        return;
+      }
+      // 存储到配置的时候是接口的参数格式，接口请求时不需要再转换
+      const newCode = code.replace('gb', 'gb_').replace('us', 'usr_');
+      LeekFundConfig.updateFutureCfg(newCode, () => {
+        futureProvider.refresh();
+      });
+      qp.hide();
+      qp.dispose();
+    });
+  });
+  commands.registerCommand('leek-fund.sortFuture', () => {
+    futureProvider.changeOrder();
+    futureProvider.refresh();
+  });
+  // 期货置顶
+  commands.registerCommand('leek-fund.setFutureTop', (target) => {
+    LeekFundConfig.setFutureTopCfg(target.id, () => {
+      futureProvider.refresh();
+    });
   });
 
   /**
@@ -311,6 +384,8 @@ export function registerViewEvent(
       stockService.toggleLabel();
       fundProvider.refresh();
       stockProvider.refresh();
+      futureService.toggleLabel();
+      futureProvider.refresh();
     })
   );
 
@@ -496,6 +571,45 @@ export function registerViewEvent(
             newCfg[newCfg.indexOf(stockId)] = res.description;
           }
           LeekFundConfig.updateStatusBarStockCfg(newCfg, () => {
+            const handler = window.setStatusBarMessage(`下次数据刷新见效`);
+            setTimeout(() => {
+              handler.dispose();
+            }, 1500);
+          });
+        });
+    })
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand('leek-fund.changeFutureStatusBarItem', (futureId) => {
+      const futureList = futureService.futureList;
+      const futureNameList = futureList
+        .filter((future) => future.id !== futureId)
+        .map((item: LeekTreeItem) => {
+          return {
+            label: `${item.info.name}`,
+            description: `${item.info.code}`,
+          };
+        });
+
+      window
+        .showQuickPick(futureNameList, {
+          placeHolder: '更换状态栏期货个股',
+        })
+        .then((res) => {
+          if (!res) return;
+          const statusBarFutures = LeekFundConfig.getConfig('leek-fund.statusBarFuture');
+          const newCfg = [...statusBarFutures];
+          const newFutureId = res.description;
+          const index = newCfg.indexOf(futureId);
+          if (statusBarFutures.includes(newFutureId)) {
+            window.showWarningMessage(`「${res.label}」已在状态栏`);
+            return;
+          }
+          if (index > -1) {
+            newCfg[newCfg.indexOf(futureId)] = res.description;
+          }
+          LeekFundConfig.updateStatusBarFutureCfg(newCfg, () => {
             const handler = window.setStatusBarMessage(`下次数据刷新见效`);
             setTimeout(() => {
               handler.dispose();

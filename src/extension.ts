@@ -12,6 +12,8 @@ import FundService from './explorer/fundService';
 import { NewsProvider } from './explorer/newsProvider';
 import { StockProvider } from './explorer/stockProvider';
 import StockService from './explorer/stockService';
+import { FutureProvider } from './explorer/futureProvider';
+import FutureService from './explorer/futureService';
 import globalState from './globalState';
 import FlashNewsDaemon from './output/flash-news/FlashNewsDaemon';
 import { registerViewEvent } from './registerCommand';
@@ -31,6 +33,7 @@ let loopTimer: NodeJS.Timer | null = null;
 let binanceLoopTimer: NodeJS.Timer | null = null;
 let fundTreeView: TreeView<any> | null = null;
 let stockTreeView: TreeView<any> | null = null;
+let futureTreeView: TreeView<any> | null = null;
 let binanceTreeView: TreeView<any> | null = null;
 
 let flashNewsOutputServer: FlashNewsOutputServer | null = null;
@@ -60,14 +63,16 @@ export function activate(context: ExtensionContext) {
 
   const fundService = new FundService(context);
   const stockService = new StockService(context);
+  const futureService = new FutureService(context);
   const binanceService = new BinanceService(context);
 
   const nodeFundProvider = new FundProvider(fundService);
   const nodeStockProvider = new StockProvider(stockService);
+  const nodeFutureProvider = new FutureProvider(futureService);
   const binanceProvider = new BinanceProvider(binanceService);
   const newsProvider = new NewsProvider();
 
-  const statusBar = new StatusBar(stockService, fundService);
+  const statusBar = new StatusBar(stockService, fundService, futureService);
   profitBar = new ProfitStatusBar();
 
   // create fund & stock side views
@@ -77,6 +82,10 @@ export function activate(context: ExtensionContext) {
 
   stockTreeView = window.createTreeView('leekFundView.stock', {
     treeDataProvider: nodeStockProvider,
+  });
+
+  futureTreeView = window.createTreeView('leekFundView.future', {
+    treeDataProvider: nodeFutureProvider,
   });
 
   binanceTreeView = window.createTreeView('leekFundView.binance', {
@@ -91,6 +100,7 @@ export function activate(context: ExtensionContext) {
   const manualRequest = () => {
     fundService.getData(LeekFundConfig.getConfig('leek-fund.funds'), SortType.NORMAL);
     stockService.getData(LeekFundConfig.getConfig('leek-fund.stocks'), SortType.NORMAL);
+    futureService.getData(LeekFundConfig.getConfig('leek-fund.futures'), SortType.NORMAL);
   };
 
   manualRequest();
@@ -110,9 +120,10 @@ export function activate(context: ExtensionContext) {
           updateAmount();
         }
       }
-      if (stockTreeView?.visible || fundTreeView?.visible) {
+      if (stockTreeView?.visible || fundTreeView?.visible || futureTreeView?.visible) {
         nodeStockProvider.refresh();
         nodeFundProvider.refresh();
+        nodeFutureProvider.refresh();
         // statusBar.refresh();
       } else {
         manualRequest();
@@ -181,6 +192,8 @@ export function activate(context: ExtensionContext) {
     nodeStockProvider,
     newsProvider,
     flashNewsOutputServer,
+    nodeFutureProvider,
+    futureService,
     binanceProvider
   );
 
