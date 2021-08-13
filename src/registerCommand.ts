@@ -582,39 +582,78 @@ export function registerViewEvent(
 
   context.subscriptions.push(
     commands.registerCommand('leek-fund.changeFutureStatusBarItem', (futureId) => {
+      const statusBarFutures = LeekFundConfig.getConfig('leek-fund.statusBarFuture');
       const futureList = futureService.futureList;
       const futureNameList = futureList
-        .filter((future) => future.id !== futureId)
+        .filter((future) => !(statusBarFutures.includes(future.id)))
         .map((item: LeekTreeItem) => {
           return {
-            label: `${item.info.name}`,
+            label: `增加 ${item.info.name}`,
             description: `${item.info.code}`,
+            operation: `add`,
           };
         });
-
+      const existFutureNameList = futureList
+        .filter((future) => statusBarFutures.includes(future.id))
+        .map((item: LeekTreeItem) => {
+          return {
+            label: `删除 ${item.info.name}`,
+            description: `${item.info.code}`,
+            operation: `del`,
+          };
+        });
+      existFutureNameList.forEach((item, index) => {
+          futureNameList.push(item);
+        });
       window
         .showQuickPick(futureNameList, {
           placeHolder: '更换状态栏期货个股',
         })
         .then((res) => {
           if (!res) return;
-          const statusBarFutures = LeekFundConfig.getConfig('leek-fund.statusBarFuture');
-          const newCfg = [...statusBarFutures];
-          const newFutureId = res.description;
-          const index = newCfg.indexOf(futureId);
-          if (statusBarFutures.includes(newFutureId)) {
-            window.showWarningMessage(`「${res.label}」已在状态栏`);
-            return;
+          if (res.operation === `add`) {
+            const statusBarFutures = LeekFundConfig.getConfig('leek-fund.statusBarFuture');
+            const newCfg = [...statusBarFutures];
+            const newFutureId = res.description;
+            
+            if (statusBarFutures.includes(newFutureId)) {
+              window.showWarningMessage(`「${res.label}」已在状态栏`);
+              return;
+            }
+            // const index = newCfg.indexOf(futureId);
+            // if (index > -1) {
+            //   newCfg[newCfg.indexOf(futureId)] = res.description;
+            // }
+            newCfg.push(res.description)
+            LeekFundConfig.updateStatusBarFutureCfg(newCfg, () => {
+              const handler = window.setStatusBarMessage(`下次数据刷新见效`);
+              setTimeout(() => {
+                handler.dispose();
+              }, 1500);
+            });
           }
-          if (index > -1) {
-            newCfg[newCfg.indexOf(futureId)] = res.description;
+
+          if (res.operation === `del`) {
+            const statusBarFutures = LeekFundConfig.getConfig('leek-fund.statusBarFuture');
+            const newCfg = [...statusBarFutures];
+            const delFutureId = res.description;
+            const index = newCfg.indexOf(futureId);
+            if (!statusBarFutures.includes(delFutureId)) {
+              window.showWarningMessage(`「${res.label}」已被删除`);
+              return;
+            }
+            if (newCfg.length === 1) {
+              window.showWarningMessage(`仅剩1个，不允许删除`);
+              return;
+            }
+            newCfg.splice(index, 1);
+            LeekFundConfig.updateStatusBarFutureCfg(newCfg, () => {
+              const handler = window.setStatusBarMessage(`下次数据刷新见效`);
+              setTimeout(() => {
+                handler.dispose();
+              }, 1500);
+            });
           }
-          LeekFundConfig.updateStatusBarFutureCfg(newCfg, () => {
-            const handler = window.setStatusBarMessage(`下次数据刷新见效`);
-            setTimeout(() => {
-              handler.dispose();
-            }, 1500);
-          });
         });
     })
   );

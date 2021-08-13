@@ -574,7 +574,8 @@
         "leek-fund.statusBarFuture": {
           "type": "array",
           "default": [
-            "FU2109"
+            "FU2109",
+            "SP2109"
           ],
           "description": "状态栏展示的期货（建议通过界面选择设置，必须是在股票代码已设置存在）"
         },

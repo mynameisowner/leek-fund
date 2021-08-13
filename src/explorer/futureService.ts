@@ -179,9 +179,9 @@ export default class futureService extends LeekService {
     }
   }
 
-  async getFutureSuggestList(searchText = '', type = '2'): Promise<QuickPickItem[]> {
+  async getFutureSuggestList(searchText = '', type = '85,86,88'): Promise<QuickPickItem[]> {
     if (!searchText) {
-      return [{ label: '请输入关键词查询，如：0000001 或 上证指数' }];
+      return [{ label: '请输入关键词查询，如：FU2109 或 燃油' }];
     }
     const url = `http://suggest3.sinajs.cn/suggest/type=${type}&key=${encodeURIComponent(
       searchText
@@ -189,6 +189,30 @@ export default class futureService extends LeekService {
     try {
       console.log('getFutureSuggestList: getting...');
       const result: QuickPickItem[] = [];
+      const response = await Axios.get(url, {
+        responseType: 'arraybuffer',
+        transformResponse: [
+          (data) => {
+            const body = decode(data, 'GB18030');
+            return body;
+          },
+        ],
+        headers: randHeader(),
+      });
+      
+      const text = response.data.slice(18, -1);
+      this.searchFutureKeyMap = {};
+      const tempArr = text.split(';');
+      tempArr.forEach((item: string) => {
+        const arr = item.split(',');
+        let code = arr[0];
+        if (!(/^[a-zA-Z]+\d{4}$/.test(code))) {
+          return;
+        }
+        result.push({
+          label: `${code} | ${arr[4]}`,
+        });
+      });
       return result;
     } catch (err) {
       console.log(url);
